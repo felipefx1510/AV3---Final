@@ -60,13 +60,8 @@ email_entry.pack()
 # Password label and entry
 password_label = tk.Label(root, text="Senha:")
 password_label.pack()
-senha_entry = tk.Entry(root, show="*")
+senha_entry = tk.Entry(root, show="•")
 senha_entry.pack()
-
-# Remember me checkbox
-remember_me = tk.IntVar()
-remember_me_check = tk.Checkbutton(root, text="Lembrar-me", variable=remember_me)
-remember_me_check.pack()
 
 # Login button
 login_button = tk.Button(root, text="Entrar", command=autenticar)
