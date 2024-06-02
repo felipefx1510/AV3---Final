@@ -2,7 +2,10 @@ import tkinter as tk
 from tkinter import messagebox
 from services import cadastro_comum, autenticacao
 from loja import administrador, pagina_inicial
+from db import create_table, criar_adm
 
+create_table()
+criar_adm()
 
 def cadastro():
     email = email_entry.get()
