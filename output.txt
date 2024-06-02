@@ -1,0 +1,712 @@
+--- .\aa.txt ---
+
+
+--- .\main.py ---
+from db import criar_adm, create_table
+from loja import administrador, pagina_inicial
+from services import *
+from time import sleep
+
+create_table()
+criar_adm()
+
+while True:
+    
+    print('Olá, seja bem-vindo ao Ninja Games!')
+    print('Aguarde enquanto carregamos o sistema...')
+
+    sleep(1.5)
+    while True:
+        print('O que deseja fazer?')
+        print('1 - Cadastro')
+        print('2 - Autenticação')
+        sleep(1)
+        
+        opcao = input('Digite a opção desejada: ')
+
+        if opcao == '1':
+            cadastro_comum()
+                
+        elif opcao == '2':
+            nivel = autenticacao()
+            if nivel == 1:
+                pagina_inicial()
+            else:
+                print('Você é um administrador!')
+                administrador()  
+        else:
+            print('Opção inválida!')
+            continue
+        
+
+--- .\main2.py ---
+import tkinter as tk
+from tkinter import messagebox
+from services import cadastro_comum, autenticacao
+from loja import administrador, pagina_inicial
+
+def autenticar():
+    email = email_entry.get()
+    senha = senha_entry.get()
+
+    if not email or not senha:
+        messagebox.showerror("Erro", "Email e senha são obrigatórios!")
+        return
+
+    nivel = autenticacao(email, senha)
+    if nivel == 1:
+        messagebox.showinfo("Autenticação", "Você é um usuário comum!")
+        root.destroy()
+        pagina_inicial()
+    else:
+        messagebox.showinfo("Autenticação", "Você é um administrador!")
+        root.destroy()
+        administrador()
+        
+root = tk.Tk()
+root.title("Ninja Games")
+
+# Welcome label
+label = tk.Label(root, text="Olá, seja bem-vindo ao Ninja Games!")
+label.pack()
+
+# Email label and entry
+email_label = tk.Label(root, text="Email:")
+email_label.pack()
+email_entry = tk.Entry(root)
+email_entry.pack()
+
+# Password label and entry
+password_label = tk.Label(root, text="Senha:")
+password_label.pack()
+senha_entry = tk.Entry(root, show="*")
+senha_entry.pack()
+
+# Remember me checkbox
+remember_me = tk.IntVar()
+remember_me_check = tk.Checkbutton(root, text="Lembrar-me", variable=remember_me)
+remember_me_check.pack()
+
+# Login button
+login_button = tk.Button(root, text="Entrar", command=autenticar)
+login_button.pack()
+
+root.mainloop()
+
+
+--- .\uooo.py ---
+import os
+import pyperclip
+
+def read_all_files_in_directory(directory, ignore_dirs=None):
+    if ignore_dirs is None:
+        ignore_dirs = {'.git', '.venv', '__pycache__', 'main.py'}
+
+    all_text = ""
+    for root, dirs, files in os.walk(directory):
+        # Filtrar diretórios ignorados
+        dirs[:] = [d for d in dirs if d not in ignore_dirs]
+        for file in files:
+            # Ignorar arquivos .git
+            if file == '.git':
+                continue
+            file_path = os.path.join(root, file)
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    file_content = f.read()
+                    all_text += f"--- {file_path} ---\n{file_content}\n\n"
+            except Exception as e:
+                print(f"Error reading {file_path}: {e}")
+    return all_text
+
+def main():
+    project_directory = '.'  # Altere para o diretório do seu projeto, se necessário
+    all_text = read_all_files_in_directory(project_directory)
+
+    # Salvar todo o conteúdo em um arquivo de texto
+    output_file = 'output.txt'
+    with open(output_file, 'w', encoding='utf-8') as f:
+        f.write(all_text)
+
+    # Copiar o conteúdo para a área de transferência
+    pyperclip.copy(all_text)
+    print(f"All text copied to clipboard and saved to {output_file}.")
+
+if __name__ == "__main__":
+    main()
+
+
+--- .\db\autenticar.py ---
+import sqlite3
+from os import path
+
+def conferir_nivel(email):
+    caminho = path.join(path.dirname(__file__), '..', 'banco_de_dados.sqlite')
+    conexao = sqlite3.connect(caminho)
+    cursor = conexao.cursor()
+    
+    cursor.execute(
+        """SELECT nivel_acesso FROM usuarios
+        WHERE email = ?""", (email,)
+    )
+    nivel_acesso = cursor.fetchone()
+    
+    conexao.close()
+    return nivel_acesso[0] if nivel_acesso else None
+
+def autenticar(email):
+    caminho = path.join(path.dirname(__file__), '..', 'banco_de_dados.sqlite')
+    conexao = sqlite3.connect(caminho)
+    cursor = conexao.cursor()
+    
+    cursor.execute(
+        """SELECT senha FROM usuarios
+        WHERE email = ?""", (email,)
+    )
+    senha_criptografada = cursor.fetchone()
+    
+    if senha_criptografada is None:
+        return None
+    else:
+        conexao.close()
+        return senha_criptografada[0]
+    
+    
+
+
+--- .\db\create_table.py ---
+import sqlite3
+from stdiomask import getpass
+import bcrypt
+
+def conexao_db(func):
+    def wrapper(*args, **kwargs):
+        conexao = sqlite3.connect('banco_de_dados.sqlite')
+        cursor = conexao.cursor()
+        
+        resultado = func(cursor, conexao, *args, **kwargs)
+        conexao.close()
+        
+        return resultado
+    
+    return wrapper
+
+
+@conexao_db
+def create_table(cursor, conexao):
+    cursor.execute(
+    """CREATE TABLE IF NOT EXISTS usuarios (
+        id_usuario INTEGER PRIMARY KEY AUTOINCREMENT,
+        nivel_acesso INTEGER NOT NULL,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        senha VARCHAR(255) NOT NULL
+    );"""
+)
+    cursor.execute(
+    """CREATE TABLE IF NOT EXISTS jogos (
+        id_jogo INTEGER PRIMARY KEY AUTOINCREMENT,
+        nome VARCHAR(255) UNIQUE NOT NULL,
+        genero VARCHAR(255) NOT NULL,
+        preco VARCHAR(255) NOT NULL,
+        estado VARCHAR(255) DEFAULT 'Ativo'
+        );"""
+)
+    cursor.execute(
+    """CREATE TABLE IF NOT EXISTS compras (
+        id_compra INTEGER PRIMARY KEY AUTOINCREMENT,
+        id_usuario INTEGER REFERENCES usuarios(id_usuario),
+        id_jogo INTEGER REFERENCES jogos(id_jogo)
+    );"""
+)
+    
+    cursor.execute(
+    """CREATE TABLE IF NOT EXISTS carrinho (
+        id_carrinho INTEGER PRIMARY KEY AUTOINCREMENT,
+        id_usuario INTEGER REFERENCES usuarios(id_usuario),
+        id_jogo INTEGER REFERENCES jogos(id_jogo)
+    );"""
+)    
+    conexao.commit()
+    
+@conexao_db
+def criar_adm(cursor, conexao):
+    email = 'adm'
+    senha = 'adm'
+    nivel_acesso = 2
+    senha_criptografada = bcrypt.hashpw(senha.encode(), bcrypt.gensalt())
+    cursor.execute(
+        """SELECT * FROM usuarios WHERE email = ?""", (email,))
+    if cursor.fetchone() is None:
+        cursor.execute(
+            """INSERT INTO usuarios (nivel_acesso, email, senha)
+            VALUES (?, ?, ?)""", (nivel_acesso, email, senha_criptografada)
+        )
+        conexao.commit()
+
+--- .\db\manipular_jogos.py ---
+import sqlite3
+from os import path
+from functools import wraps
+import services
+
+def conexao_db(func):
+    def wrapper(*args, **kwargs):
+        caminho = path.join(path.dirname(__file__), '..', 'banco_de_dados.sqlite')
+        conexao = sqlite3.connect(caminho)
+        cursor = conexao.cursor()
+        
+        resultado = func(cursor, conexao, *args, **kwargs)
+        conexao.close()
+        
+        return resultado
+        
+    return wrapper
+
+@conexao_db
+def adicionar_jogo(cursor, conexao, jogo, genero, preco):
+    
+    cursor.execute(
+        """INSERT INTO jogos (nome, genero, preco) 
+        VALUES (?, ?, ?)""", (jogo, genero, preco)
+    )
+    conexao.commit()
+    
+    
+@conexao_db
+def excluir_jogo(cursor, conexao, id_jogo):
+    
+    cursor.execute(
+        """DELETE FROM jogos WHERE id_jogo = ?""", (id_jogo,)
+    )
+    conexao.commit()
+    
+@conexao_db
+def pesquisar_jogos(cursor, conexao, nome):
+    
+    return cursor.execute(
+        """SELECT * FROM jogos WHERE nome = ?""", (nome,)
+    ).fetchall()
+    
+@conexao_db
+def lista_jogos(cursor, conexao):
+    
+    return cursor.execute(
+     """SELECT * FROM jogos"""
+     ).fetchall()
+
+
+@conexao_db
+def comprar_jogo(cursor, conexao, id_jogo, id_usuario):
+    
+    cursor.execute(
+        """INSERT INTO compras (id_usuario, id_jogo) 
+        VALUES (?, ?)""", (id_usuario, id_jogo)
+    )
+    conexao.commit()
+    
+@conexao_db
+def desativar_jogo(cursor, conexao, id_jogo):    
+    cursor.execute(
+        """UPDATE jogos SET estado = 'Inativo' WHERE id_jogo = ?""", (id_jogo,)
+    )
+    conexao.commit()
+    
+@conexao_db
+def ativar_jogo(cursor, conexao, id_jogo):    
+    cursor.execute(
+        """UPDATE jogos SET estado = 'Ativo' WHERE id_jogo = ?""", (id_jogo,)
+    )
+    conexao.commit()
+    
+@conexao_db
+def biblioteca(cursor, conexao, id_usuario):
+    
+    return cursor.execute(
+        """SELECT jogos.nome, jogos.genero, jogos.preco 
+        FROM jogos 
+        JOIN compras ON jogos.id_jogo = compras.id_jogo 
+        WHERE compras.id_usuario = ?""", (id_usuario,)
+    ).fetchall()
+
+--- .\db\manipular_usuarios.py ---
+import sqlite3
+from os import path
+
+
+def conexao_db(funcao):
+    def wrapper(*args, **kwargs):
+        caminho = path.join(path.dirname(__file__), '..', 'banco_de_dados.sqlite')
+        conexao = sqlite3.connect(caminho)
+        cursor = conexao.cursor()
+        resultado = funcao(cursor, *args, **kwargs)
+        conexao.commit()
+        conexao.close()
+        return resultado
+    return wrapper
+
+@conexao_db
+def inserir_usuario(cursor, nivel_acesso, email, senha_criptografada):
+    cursor.execute(
+        """INSERT INTO usuarios (nivel_acesso, email, senha)
+        VALUES (?, ?, ?)""", (nivel_acesso, email, senha_criptografada)
+    )
+    
+@conexao_db
+def obter_id(cursor, email):
+    return cursor.execute(
+        """SELECT id_usuario FROM usuarios WHERE email = ?""", (email,)
+    ).fetchone()
+    
+@conexao_db
+def excluir_usuario(cursor, id_usuario):
+    cursor.execute(
+        """DELETE FROM usuarios WHERE id_usuario = ?""", (id_usuario,)
+    )
+    
+@conexao_db
+def listar_usuarios(cursor):
+    return cursor.execute(
+        """SELECT id_usuario, email FROM usuarios"""
+    ).fetchall()
+
+@conexao_db
+def pesquisar_usuario(cursor, email):
+    return cursor.execute(
+        """SELECT * FROM usuarios WHERE email = ?""", (email,)
+    ).fetchone()
+
+--- .\db\__init__.py ---
+from .create_table import *
+from .manipular_usuarios import *
+from .autenticar import *
+from .manipular_jogos import *
+
+--- .\loja\__init__.py ---
+from .administrador.main import *
+from .administrador.produtos import *
+from .administrador.usuarios import *
+from .comum.loja import *
+
+--- .\loja\administrador\main.py ---
+from .produtos import *
+from .usuarios import *
+from time import sleep
+from os import system
+from stdiomask import getpass
+import bcrypt
+from db import inserir_usuario
+
+def voltando():
+    print('Voltando ao menu principal...')
+    sleep(1)
+    system('cls')
+    return
+
+def administrador(): 
+    while True:
+        print('Seja bem-vindo, administrador, ao sistema do Ninja Games!')
+        print('O que desejar fazer hoje?')
+        print('1 - Adicionar um jogo.')
+        print('2 - Excluir um jogo.')
+        print('3 - Listar jogos.')
+        print('4 - Desativar jogo no banco de dados.')
+        print('5 - Ativar jogo no banco de dados.')
+        print('6 - Listar usuarios')
+        print('7 - Adicionar um usuário.')
+        print('8 - Excluir um usuário.')
+
+        opcao = int(input())
+        if opcao == 1:
+            while True:
+                jogo = input('Digite o nome do jogo que você deseja adcionar: ')
+                genero = input('Digite o gênero do jogo adicionado: ') 
+                preco = input('Digite o preço do jogo adicionado: ')
+                add_jogo(jogo, genero, preco)
+                print('Jogo adicionado com sucesso!')
+                opcao = input('Deseja adicionar outro jogo? (S/N)').upper()
+                
+                if opcao == 'S':
+                    continue
+                elif opcao == 'N':
+                    voltando()
+                    break
+                else:
+                    print('Opção inválida!')
+
+        elif opcao == 2:
+            while True:
+                id = input('Digite o ID do jogo que você deseja excluir: ')
+                remover_jogo(id)
+                print('Jogo removido com sucesso!')
+                opcao = input('Deseja excluir outro jogo? (S/N)').upper()
+                if opcao == 'S':
+                    continue
+                elif opcao == 'N':
+                    voltando()
+                    break
+                else:
+                    print('Opção inválida!')
+                
+        elif opcao == 3:
+            while True:
+                listar_jogos()
+                break
+                
+        elif opcao == 4:
+            while True:
+                id = input('Digite o ID do jogo que você deseja desativar: ')
+                desativar_jogo(id)
+                print('Jogo desativado com sucesso!')
+                opcao = input('Deseja desativar outro jogo? (S/N)').upper()
+                if opcao == 'S':
+                    continue
+                elif opcao == 'N':
+                    voltando()
+                    break
+                else:
+                    print('Opção inválida!')
+                    
+        elif opcao == 5:
+            while True:
+                id = input('Digite o ID do jogo que você deseja ativar: ')
+                ativar_jogo(id)
+                print('Jogo ativado com sucesso!')
+                opcao = input('Deseja ativar outro jogo? (S/N)').upper()
+                if opcao == 'S':
+                    continue
+                elif opcao == 'N':
+                    voltando()
+                    break
+                else:
+                    print('Opção inválida!')
+                    
+        elif opcao == 6:
+            while True:
+                system('cls')
+                print('Listando usuários...')
+                sleep(1)
+                listar_usuarios()
+                sleep(1)
+                break
+                
+        elif opcao == 7:
+            while True:
+                email = input('Digite o email do usuário que deseja adicionar: ')
+                senha = getpass('Digite a senha do usuário que deseja adicionar: ', mask='•')
+                nivel = input('Digite o nível do usuário que deseja adicionar: ')
+                senha_criptografada = bcrypt.hashpw(senha.encode(), bcrypt.gensalt())
+                inserir_usuario(nivel, email, senha_criptografada)
+                print('Usuário adicionado com sucesso!')
+                opcao = input('Deseja adicionar outro usuário? (S/N)').upper()
+                if opcao == 'S':
+                    continue
+                elif opcao == 'N':
+                    voltando()
+                    break
+                else:
+                    print('Opção inválida!')
+            
+        elif opcao == 8:
+            while True:
+                id = input('Digite o ID do usuário que você deseja excluir: ')
+                excluir_usuario(id)
+                print('Usuário removido com sucesso!')
+                opcao = input('Deseja excluir outro usuário? (S/N)').upper()
+                if opcao == 'S':
+                    continue
+                elif opcao == 'N':
+                    voltando()
+                    break
+                else:
+                    print('Opção inválida!')
+                
+
+            
+            
+            
+
+--- .\loja\administrador\produtos.py ---
+from db import adicionar_jogo, excluir_jogo, ativar_jogo as db_ativar_jogo, desativar_jogo as db_desativar_jogo, lista_jogos as db_lista_jogos
+from tabulate import tabulate
+
+def add_jogo(jogo, genero, preco):    
+    adicionar_jogo(jogo, genero, preco)
+    
+def remover_jogo(id_jogo):
+    excluir_jogo(id_jogo)
+    
+def desativar_jogo(id_jogo):
+    db_desativar_jogo(id_jogo)
+
+def ativar_jogo(id_jogo):
+    db_ativar_jogo(id_jogo)
+    
+def listar_jogos():
+    jogos = db_lista_jogos()
+    print(tabulate(jogos, headers=['ID', 'Nome', 'Gênero', 'Preço', 'Estado'], tablefmt='grid'))
+
+--- .\loja\administrador\usuarios.py ---
+from db import listar_usuarios as db_listar_usuarios, excluir_usuario as db_excluir_usuario
+from os import system
+from time import sleep
+from tabulate import tabulate
+
+def listar_usuarios():
+    usuarios = db_listar_usuarios()
+    cabecalho = ["ID", "Email"]
+    print(tabulate(usuarios, headers=cabecalho, tablefmt="grid", maxcolwidths=[None, 30]))  # Limita a coluna "Email" a 30 caracteres
+        
+def excluir_usuario(id_usuario):
+    db_excluir_usuario(id_usuario)
+
+--- .\loja\comum\loja.py ---
+from .produtos import *
+from db import obter_id
+from services.usuarios.autenticacao import id_aut_email # Importa a função id_aut_email diretamente
+
+def pagina_inicial():
+    while True:
+        print('O que deseja fazer?')
+        print('1 - Ver jogos disponíveis')
+        print('2 - Comprar')
+        print('3 - Biblioteca')
+        sleep(1)
+        
+        opcao = input('Digite a opção desejada: ')
+        
+        if opcao == '1':
+            while True:
+                listar_jogos()
+                break
+            
+        elif opcao == '2':
+            while True:
+                id_jogo = input('Digite o ID do jogo que deseja comprar: ')
+                id_usuario = obter_id(id_aut_email())[0]
+                comprar_jogo(id_jogo, id_usuario)
+                print('Jogo comprado com sucesso!')
+                break
+            
+        elif opcao == '3':
+            while True:
+                id_usuario = obter_id(id_aut_email())[0]
+                biblioteca(id_usuario)
+                break
+        
+        else:
+            print('Opção inválida!')
+            continue
+
+--- .\loja\comum\produtos.py ---
+from os import system
+from tabulate import tabulate
+from time import sleep
+from db import lista_jogos as db_listar_jogos, pesquisar_jogos as db_pesquisar_jogos, comprar_jogo as db_comprar_jogo, biblioteca as db_biblioteca
+
+def listar_jogos():
+    system('cls')
+    print('Listando jogos...')
+    sleep(1)
+    jogos = db_listar_jogos()
+    cabecalho = ["ID", "Nome", "Gênero", "Preço", "Estado"]
+    if jogos:
+        print(tabulate(jogos, headers=cabecalho, tablefmt="grid", maxcolwidths=[None, None, None, None, 10]))  # Limita a coluna "Estado" a 10 caracteres
+    else:
+        print('Nenhum jogo encontrado.')
+        sleep(1)
+        
+def pesquisar_jogo(nome):
+    print('Pesquisando jogos...')
+    jogos = db_pesquisar_jogos(nome)
+    if jogos:
+        cabecalho = ["ID", "Nome", "Gênero", "Preço", "Estado"]
+        print(tabulate(jogos, headers=cabecalho, tablefmt="grid", maxcolwidths=[None, None, None, None, 10]))  # Limita a coluna "Estado" a 10 caracteres
+    else:
+        print('Nenhum jogo encontrado.')
+        
+def comprar_jogo(id_jogo, id_usuario):
+    db_comprar_jogo(id_jogo, id_usuario)
+    
+def biblioteca(id_usuario):
+    jogos = db_biblioteca(id_usuario)
+    cabecalho = ["Nome", "Gênero", "Preço"]
+    if jogos:
+        print(tabulate(jogos, headers=cabecalho, tablefmt="grid", maxcolwidths=[None, None, None]))  # Limita a coluna "Estado" a 10 caracteres
+    else:
+        print('Nenhum jogo encontrado.')
+        sleep(1)
+
+--- .\services\__init__.py ---
+from .usuarios.autenticacao import *
+from .usuarios.cadastro import *
+
+--- .\services\usuarios\autenticacao.py ---
+from stdiomask import getpass
+from db import autenticar, conferir_nivel
+import bcrypt
+
+aut_email = None
+
+def autenticacao(email, senha):
+    global aut_email
+    aut_email = email
+        
+    senha_criptografada = autenticar(email)
+        
+    if senha_criptografada is None or not bcrypt.checkpw(senha.encode(), senha_criptografada):
+        print('Usuário ou senha inválidos')
+        return None
+    
+    nivel = conferir_nivel(email)
+    return nivel
+    
+def id_aut_email():
+    return aut_email
+            
+            
+            
+
+--- .\services\usuarios\cadastro.py ---
+import bcrypt
+from stdiomask import getpass
+from db import inserir_usuario
+
+def cadastro_comum():
+    while True:
+        print('-'*30)
+        print('Cadastro')
+        print('-'*30)
+        nivel_acesso = 1
+        email = input('Digite o email desejado: ')
+        senha = getpass('Digite a senha desejada: ', mask='•')
+        senha_criptografada = bcrypt.hashpw(senha.encode(), bcrypt.gensalt())
+        
+        inserir_usuario(nivel_acesso, email, senha_criptografada)
+        print('Usuário cadastrado com sucesso!')
+        while True:
+            opcao = int(input('Deseja cadastrar outro usuário?\n1.Sim\n2.Não\n'))
+            if opcao == 1:
+                break
+            elif opcao == 2:
+                return
+
+def cadastro_adm():
+    while True:
+        print('-'*30)
+        print('Cadastro')
+        print('-'*30)
+        nivel_acesso = int(input('Digite o nível de acesso do usuário: '))
+        email = input('Digite o email desejado:')
+        senha = getpass('Digite a senha desejada: ', mask='•')
+        senha_criptografada = bcrypt.hashpw(senha.encode(), bcrypt.gensalt())
+        
+        inserir_usuario(nivel_acesso, email, senha_criptografada)
+        
+        print('Usuário cadastrado com sucesso!')
+        while True:
+            opcao = int(input('Deseja cadastrar outro usuário?\n1.Sim\n2.Não\n'))
+            if opcao == 1:
+                break
+            elif opcao == 2:
+                return
+
