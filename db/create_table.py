@@ -42,14 +42,14 @@ def create_table(cursor, conexao):
     );"""
 )
     
-    cursor.execute(
-    """CREATE TABLE IF NOT EXISTS carrinho (
-        id_carrinho INTEGER PRIMARY KEY AUTOINCREMENT,
-        id_usuario INTEGER REFERENCES usuarios(id_usuario),
-        id_jogo INTEGER REFERENCES jogos(id_jogo)
-    );"""
-)    
-    conexao.commit()
+#     cursor.execute(
+#     """CREATE TABLE IF NOT EXISTS carrinho (
+#         id_carrinho INTEGER PRIMARY KEY AUTOINCREMENT,
+#         id_usuario INTEGER REFERENCES usuarios(id_usuario),
+#         id_jogo INTEGER REFERENCES jogos(id_jogo)
+#     );"""
+# )    
+#     conexao.commit()
     
 @conexao_db
 def criar_adm(cursor, conexao):
