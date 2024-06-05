@@ -1,5 +1,4 @@
 import sqlite3
-from stdiomask import getpass
 import bcrypt
 
 def conexao_db(func):
