@@ -81,3 +81,18 @@ def biblioteca(cursor, conexao, id_usuario):
         JOIN compras ON jogos.id_jogo = compras.id_jogo 
         WHERE compras.id_usuario = ?""", (id_usuario,)
     ).fetchall()
+    
+@conexao_db
+def jogos_ativos(cursor, conexao):
+    
+    return cursor.execute(
+        """SELECT * FROM jogos WHERE estado = 'Ativo'"""
+    ).fetchall()
+
+# @conexao_db
+# def futuro_join(cursor, conexao):
+    
+#     return cursor.execute(
+#         """SELECT * FROM jogos 
+#         JOIN compras ON jogos.id_jogo = compras.id_jogo"""
+#     ).fetchall()
