@@ -43,7 +43,8 @@ def autenticar():
         messagebox.showinfo("Autenticação", "Você é um administrador!")
         root.destroy()
         administrador()
-        
+
+    
 root = tk.Tk()
 root.title("Ninja Games")
 

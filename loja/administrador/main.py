@@ -24,6 +24,7 @@ def administrador():
         print('6 - Listar usuarios')
         print('7 - Adicionar um usuário.')
         print('8 - Excluir um usuário.')
+        print('9 - Sair')
 
         opcao = int(input())
         if opcao == 1:
@@ -129,6 +130,14 @@ def administrador():
                     break
                 else:
                     print('Opção inválida!')
+                    
+        elif opcao == 9:
+            system('cls')
+            print('Deslogando...')
+            sleep(1)
+            break
+            
+            
                 
 
             

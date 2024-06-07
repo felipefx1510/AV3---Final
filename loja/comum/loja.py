@@ -8,6 +8,7 @@ def pagina_inicial():
         print('1 - Ver jogos disponíveis')
         print('2 - Comprar')
         print('3 - Biblioteca')
+        print('4 - Deslogar')
         sleep(1)
         
         opcao = input('Digite a opção desejada: ')
@@ -30,7 +31,10 @@ def pagina_inicial():
                 id_usuario = obter_id(id_aut_email())[0]
                 biblioteca(id_usuario)
                 break
-        
+        elif opcao == '4':
+            print('Deslogado com sucesso!')
+            break
+            
         else:
             print('Opção inválida!')
             continue
