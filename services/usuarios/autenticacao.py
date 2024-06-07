@@ -1,4 +1,3 @@
-from stdiomask import getpass
 from db import autenticar, conferir_nivel
 import bcrypt
 
