@@ -137,6 +137,9 @@ def administrador():
             sleep(1)
             break
             
+        else:
+            print('Opção inválida')
+            continue
             
                 
 
